@@ -88,51 +88,89 @@ using mesa::Calc;
 
 int main(int argc, char* argv[])
 {
-  //bool is_verbose = false;
+  bool is_interactive = (isatty(0) && isatty(1));
+  bool is_verbose = false;
 
   // Process program options
-  /*
-   *for (char c; (c = getopt(argc, argv, "hv")) != -1;) {
-   *  switch (c) {
-   *    case 'h':
-   *      std::cout <<
-   *        "Project 3: PostFixCalculator\n"
-   *        "Program options:\n"
-   *        "  -h [ --help ]     Show this message\n"
-   *        "  -v [ --verbose ]  Be verbose\n"
-   *        "Example usage:\n"
-   *        "  './Calc'                   "
-   *        "Run in interactive mode\n"
-   *        "  'echo \"^ 2 99\" | ./calc'   "
-   *        "Echo expressions to be evaluated, as standard input\n"
-   *        "  './calc < input.txt'       "
-   *        "Redirect file containing expressions to be evaluated, as standard input\n";
-   *      return 0;
-   *      break;
-   *    case 'v':
-   *      is_verbose = true;
-   *      break;
-   *    default:
-   *      std::cout
-   *        << "Error: Invalid program option '" << c << "'\n";
-   *      break;
-   *  }
-   *}
-   */
+  for (char c; (c = getopt(argc, argv, "hv")) != -1;) {
+    switch (c) {
+      case 'h':
+        std::cout <<
+          "Project 3: PostFixCalculator\n"
+          "Program options:\n"
+          "  -h [ --help ]     Show this message\n"
+          "  -v [ --verbose ]  Be verbose\n";
+        return 0;
+        break;
+      case 'v':
+        is_verbose = true;
+        break;
+      default:
+        std::cout
+          << "Error: Invalid program option '" << c << "'\n";
+        break;
+    }
+  }
 
   // Logger
-  StreamLogger logger{&std::cout, LogLevel::Debug};
+  StreamLogger logger{&std::cout, LogLevel::Info};
 
   // Calculator
   Calc* calc = Calc::instance();
   calc->stdLogger(&logger);
   calc->errLogger(&logger);
 
-  calc->evaluate("1");
-
   // Input
-  //std::string raw_input{"3 2 * 4 ^"};
-  //std::cout << "Raw input: \"" << raw_input << "\"\n";
+  std::string line, token;
+
+  // Print interactive intro message
+  if (is_interactive)
+    std::cout <<
+      "Project 3: OO-Calc\n"
+      "  Enter 'help' to display interactive usage information\n"
+      "  Enter 'quit' to quit\n";
+
+  // Main loop
+  while (!std::cin.eof()) {
+    if (is_interactive) std::cout << "> ";
+
+    // Input
+    line.clear();
+    std::getline(std::cin, line);
+    if (line.empty()) continue;
+
+    // Parse optional command/comment
+    std::istringstream{line} >> token;
+    if (token[0] == '#') {
+      continue;
+    } else if (token == "q" || token == "quit") {
+      std::cout << "Quitting...\n";
+      break;
+    } else if (token == "h" || token == "help" || token == "?") {
+      std::cout <<
+        "Help\n"
+        "  [command] [operation <args...>]\n\n"
+        "Commands:\n"
+        "  q [ quit ]     Quit the program\n"
+        "  h [ help, ? ]  Print this message\n\n"
+        "Instructions:\n"
+        "  Calculates the result of a single-line compound infix mathematical "
+        "expressions. Operations are binary (expect to prior numerical "
+        "arguments) and all are separated by whitespace.\n\n"
+        "Supported operations:\n"
+        "  +  Addition\n"
+        "  -  Subraction\n"
+        "  *  Multiplication\n"
+        "  /  Division\n"
+        "  ^  Exponentiation\n";
+      continue;
+    }
+
+    // Execute and output
+    if (is_verbose)
+      std::cout << '"' << line << "\" = ";
+    std::cout << calc->evaluate(line) << "\n";
+  }
 
   return 0;
 }

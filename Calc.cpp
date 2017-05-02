@@ -10,31 +10,61 @@
 using mesa::Logger;
 using mesa::BigInt;
 using mesa::Calc;
-//using DataT = mesa::BigInt;
-//using Command = mesa::Command<DataT>;
-//using OperandsT = Command::OperandsT;
-//using BinaryOpCommand = mesa::BinaryOpCommand<DataT>;
-//using ParseNumCommand = mesa::ParseNumCommand<DataT>;
+using DataT = mesa::BigInt;
+using Command = mesa::Command<DataT>;
+using OperandsT = Command::OperandsT;
+using BinaryOpCommand = mesa::BinaryOpCommand<DataT>;
+using ParseNumCommand = mesa::ParseNumCommand<DataT>;
 
-/*
- *inline std::string stack_to_string(OperandsT stack)
- *{
- *  std::ostringstream oss;
- *  while (!stack.empty()) {
- *    oss << stack.top();
- *    if (stack.size() > 1); oss << ' ';
- *    stack.pop();
- *  }
- *  return oss.str();
- *}
- */
+// @return Vector of space delimited token strings from an input string
+inline std::vector<std::string> vectorify(const std::string& s)
+{
+  std::vector<std::string> tokens;
+  std::istringstream iss{s};
+  std::string temp;
+  while (iss >> temp >> std::ws)
+    tokens.push_back(temp);
+  //throw std::invalid_argument{temp};
+  return tokens;
+}
+
+// @return Stackify of space delimited token strings from an input string
+inline std::stack<std::string> stackify(const std::string& s)
+{
+  std::stack<std::string> tokens;
+  std::istringstream iss{s};
+  std::string temp;
+  while (iss >> temp >> std::ws)
+    tokens.push(temp);
+  return tokens;
+}
+
+// @return Queue of space delimited token strings from an input string
+inline std::queue<std::string> queuify(const std::string& s)
+{
+  std::queue<std::string> tokens;
+  std::istringstream iss{s};
+  std::string temp;
+  while (iss >> temp >> std::ws)
+    tokens.push(temp);
+  return tokens;
+}
+
+// @return Contents of stack as a string
+inline std::string stack_to_string(OperandsT stack)
+{
+  std::ostringstream oss;
+  while (!stack.empty()) {
+    oss << stack.top();
+    if (stack.size() > 1); oss << ' ';
+    stack.pop();
+  }
+  return oss.str();
+}
+
+// -----------------------------------------------------------------------------
 
 Calc* Calc::s_instance = nullptr;
-
-Calc::Calc()
-{
-  //initialize();
-}
 
 void Calc::initialize()
 {
@@ -49,12 +79,6 @@ void Calc::initialize()
   };
 }
 
-//Calc& Calc::instance()
-//{
-  //static Calc instance;
-  //return instance;
-//}
-
 Calc* Calc::instance()
 {
   if (!s_instance)
@@ -64,6 +88,39 @@ Calc* Calc::instance()
 
 BigInt Calc::evaluate(const std::string& line)
 {
+  OperandsT operands;
+
+  // Convert space-delimited raw input line into token queue
+  std::queue<std::string> tokens = queuify(line);
+  std::string token;
+
+  bool unhandled;
+  while (!tokens.empty()) {
+    token = tokens.front();
+    try {
+      unhandled = true;
+      for (auto command: m_commands) {
+        if (command->execute(operands, token)) {
+          unhandled = false;
+          break;
+        }
+      }
+      if (unhandled) {
+        std::cout << "Error: '" << token << "' went unhandled\n";
+        break;
+      }
+    } catch (std::exception& e) {
+      std::cout << "Exception!\n  what():  " << e.what() << "\n";
+    }
+    tokens.pop();
+  }
+  if (operands.size() > 1) {
+    std::cout << "Error: Operands remaining on stack\n  {"
+      << stack_to_string(operands) << "}\n";
+  } else {
+    return operands.top();
+  }
+
   // TODO: NEW -----------------------------------------------------------------
   /*
    *  // Operand stack
@@ -157,5 +214,6 @@ BigInt Calc::evaluate(const std::string& line)
    *
    *  return result;
    */
-  return BigInt{1};
+
+  return BigInt{0};
 }

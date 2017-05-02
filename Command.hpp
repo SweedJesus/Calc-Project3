@@ -27,8 +27,7 @@ using Logger = mesa::Logger;
 namespace mesa
 {
   // ---------------------------------------------------------------------------
-
-  /** Command interface
+  /** Command interface class
   */
   template<class T> class Command
   {
@@ -37,14 +36,29 @@ namespace mesa
       using DataT     = T;
       using OperandsT = std::stack<DataT>;
 
-      /** Destructor
-      */
-      virtual ~Command()
-      {}
+      virtual ~Command()                 = default;
+      //Command(const Command&)            = default;
+      //Command(Command&&)                 = default;
+      //Command& operator=(const Command&) = default;
+      //Command& operator=(Command&&)      = default;
 
+      /** Get standard output logger
+       */
+      Logger* stdoutLogger()
+      { return m_stdoutLogger; }
+
+      /** Set standard output logger
+       */
       void stdoutLogger(Logger* logger)
       { m_stdoutLogger = logger; }
 
+      /** Get standard error logger
+       */
+      Logger* erroutLogger()
+      { return m_stderrLogger; }
+
+      /** Set standard error logger
+       */
       void stderrLogger(Logger* logger)
       { m_stderrLogger = logger; }
 
@@ -76,7 +90,8 @@ namespace mesa
   };
 
   // ---------------------------------------------------------------------------
-
+  /** Binary operation command class
+   */
   template<class T> class BinaryOpCommand : public Command<T>
   {
     public:
@@ -94,13 +109,14 @@ namespace mesa
           const std::string& token) const override
       {
         if (token.size() == 1 && token[0] == this->m_OP_CHAR) {
-          std::cout << "[BinaryOpCommand: '" << m_OP_CHAR << "']\n";
+          Command<T>::log(LogLevel::Debug,
+              "[BinaryOpCommand: '" + std::string{m_OP_CHAR} + "']\n");
           if (operands.size() < 2) {
             throw std::runtime_error(
                 "Binary operations require two operands");
           }
-          auto lhs = operands.top(); operands.pop();
           auto rhs = operands.top(); operands.pop();
+          auto lhs = operands.top(); operands.pop();
           operands.push(m_op(lhs, rhs));
           return true;
         }
@@ -113,8 +129,7 @@ namespace mesa
   };
 
   // ---------------------------------------------------------------------------
-
-  /** Store as integer command
+  /** "Parse operand as number" command
   */
   template<class T> class ParseNumCommand : public Command<T>
   {

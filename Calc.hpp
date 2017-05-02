@@ -1,7 +1,8 @@
 #pragma once
 
 #include <array>
-#include <vector>
+#include <stack>
+#include <queue>
 #include <functional>
 
 #include "Logger.hpp"
@@ -70,13 +71,14 @@ namespace mesa
       BigInt evaluate(const std::string& line);
 
     private:
-      Calc();
+      Calc()
+      { initialize(); }
+
       void initialize();
 
       static Calc *s_instance;
 
       CommandsT m_commands;
-
       Logger *m_stdLogger, *m_errLogger;
   };
   // ---------------------------------------------------------------------------
