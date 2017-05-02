@@ -6,8 +6,8 @@
  * Example usage:
  * ```
  * // Create stream loggers
- * ConsoleLogger stdLogger1(&std::cout, LogLevel::Info);
- * ConsoleLogger stdLogger2(&std::cout, LogLevel::Info | LogLevel::Debug);
+ * StreamLogger stdLogger1(&std::cout, LogLevel::Info);
+ * StreamLogger stdLogger2(&std::cout, LogLevel::Info | LogLevel::Debug);
  *
  * // Create file logger
  * std::ofstream logFile("log.txt", std::ios::out);
@@ -124,14 +124,14 @@ namespace mesa
 
   /** Stream (console) logger
    */
-  class ConsoleLogger: public Logger
+  class StreamLogger: public Logger
   {
     public:
       /**
        * @param os Output stream to log to
        * @param logLevel Logging level
        */
-      ConsoleLogger(
+      StreamLogger(
           std::ostream* osPtr = nullptr,
           const size_t& logLevel = LogLevel::None):
         Logger{logLevel},
@@ -173,7 +173,7 @@ namespace mesa
   };
 }
 
-mesa::Logger& operator<<(mesa::Logger& lhs, const mesa::Logger::MessageT& rhs)
+inline mesa::Logger& operator<<(mesa::Logger& lhs, const mesa::Logger::MessageT& rhs)
 {
   return lhs.log(rhs.first, rhs.second);
 }
