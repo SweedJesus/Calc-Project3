@@ -183,7 +183,7 @@ BigInt::BigInt(const std::string& s)
 {
   // Check if is numeric
   if (s.empty() || std::find_if(s.begin(), s.end(),
-      [](char c) { return !std::isdigit(c); }) != s.end())
+        [](char c) { return !std::isdigit(c); }) != s.end())
     throw std::invalid_argument(
         "Attempted conversion from non-numeric token '" + s + "'");
   // Get position of first non-trailing-zero character...

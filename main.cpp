@@ -11,9 +11,9 @@
 #include <string>
 
 #include "Logger.hpp"
-#include "BigInt.hpp"
 #include "Command.hpp"
 #include "Calc.hpp"
+#include "BigInt.hpp"
 
 // Logger aliases
 using LogLevel = mesa::LogLevel;
@@ -21,19 +21,18 @@ using StreamLogger = mesa::StreamLogger;
 //using FileLogger = mesa::FileLogger;
 
 // Data type alias
-//using DataT = unsigned int;
-//using DataT = mesa::BigInt;
+using DataT = mesa::BigInt;
 
 // Command aliases
-//using Command = mesa::Command<DataT>;
-//using OperandsT = Command::OperandsT;
+using Command = mesa::Command<DataT>;
+using OperandsT = Command::OperandsT;
 
 // Arithmetic command aliases
 //using BinaryOpCommand = mesa::BinaryOpCommand<DataT>;
 //using ParseNumCommand = mesa::ParseNumCommand<DataT>;
 
 // Calculator aliases
-using mesa::Calc;
+using Calc = mesa::Calc<DataT>;
 
 // @return True if string contains only "valid" characters
 /*
@@ -90,30 +89,37 @@ int main(int argc, char* argv[])
 {
   bool is_interactive = (isatty(0) && isatty(1));
   bool is_verbose = false;
+  bool is_debug = false;
 
   // Process program options
-  for (char c; (c = getopt(argc, argv, "hv")) != -1;) {
+  for (char c; (c = getopt(argc, argv, "hvd")) != -1;) {
     switch (c) {
       case 'h':
         std::cout <<
           "Project 3: PostFixCalculator\n"
           "Program options:\n"
-          "  -h [ --help ]     Show this message\n"
-          "  -v [ --verbose ]  Be verbose\n";
+          "  -h    Show this message\n"
+          "  -v    Be verbose\n"
+          "  -d    Debug\n";
         return 0;
         break;
       case 'v':
         is_verbose = true;
         break;
+      case 'd':
+        is_debug = true;
+        break;
       default:
         std::cout
           << "Error: Invalid program option '" << c << "'\n";
-        break;
+        return 1;
     }
   }
 
   // Logger
-  StreamLogger logger{&std::cout, LogLevel::Info};
+  size_t logLevel =
+    (LogLevel::Info | is_debug * LogLevel::Debug);
+  StreamLogger logger{&std::cout, logLevel};
 
   // Calculator
   Calc* calc = Calc::instance();
@@ -131,6 +137,7 @@ int main(int argc, char* argv[])
       "  Enter 'quit' to quit\n";
 
   // Main loop
+  DataT result;
   while (!std::cin.eof()) {
     if (is_interactive) std::cout << "> ";
 
@@ -167,9 +174,14 @@ int main(int argc, char* argv[])
     }
 
     // Execute and output
-    if (is_verbose)
-      std::cout << '"' << line << "\" = ";
-    std::cout << calc->evaluate(line) << "\n";
+    try {
+      result = calc->evaluate(line);
+      if (is_verbose)
+        std::cout << '"' << line << "\" = ";
+      std::cout << result << "\n";
+    } catch (std::exception& e) {
+      std::cout << "Exception!\n  what():  " << e.what() << "\n";
+    }
   }
 
   return 0;

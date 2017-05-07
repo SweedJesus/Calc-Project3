@@ -14,15 +14,13 @@
  *   - arithmetic logic confined to Command derived classes
  */
 
-#include <string>
 #include <stack>
+#include <functional>
 #include <algorithm>
-#include <cmath>
 
 #include "Logger.hpp"
 
-using LogLevel = mesa::LogLevel;
-using Logger = mesa::Logger;
+#include "util.hpp"
 
 namespace mesa
 {
@@ -43,22 +41,22 @@ namespace mesa
       //Command& operator=(Command&&)      = default;
 
       /** Get standard output logger
-       */
+      */
       Logger* stdoutLogger()
       { return m_stdoutLogger; }
 
       /** Set standard output logger
-       */
+      */
       void stdoutLogger(Logger* logger)
       { m_stdoutLogger = logger; }
 
       /** Get standard error logger
-       */
+      */
       Logger* erroutLogger()
       { return m_stderrLogger; }
 
       /** Set standard error logger
-       */
+      */
       void stderrLogger(Logger* logger)
       { m_stderrLogger = logger; }
 
@@ -90,45 +88,6 @@ namespace mesa
   };
 
   // ---------------------------------------------------------------------------
-  /** Binary operation command class
-   */
-  template<class T> class BinaryOpCommand : public Command<T>
-  {
-    public:
-      using DataT      = typename Command<T>::DataT;
-      using OperandsT  = typename Command<T>::OperandsT;
-      using OperationT = std::function<T(T, const T&)>;
-
-      BinaryOpCommand(char opChar, OperationT op):
-        m_OP_CHAR{opChar},
-        m_op{op}
-      {}
-
-      bool execute(
-          typename Command<T>::OperandsT& operands,
-          const std::string& token) const override
-      {
-        if (token.size() == 1 && token[0] == this->m_OP_CHAR) {
-          Command<T>::log(LogLevel::Debug,
-              "[BinaryOpCommand: '" + std::string{m_OP_CHAR} + "']\n");
-          if (operands.size() < 2) {
-            throw std::runtime_error(
-                "Binary operations require two operands");
-          }
-          auto rhs = operands.top(); operands.pop();
-          auto lhs = operands.top(); operands.pop();
-          operands.push(m_op(lhs, rhs));
-          return true;
-        }
-        return false;
-      }
-
-    protected:
-      const char m_OP_CHAR;
-      OperationT m_op;
-  };
-
-  // ---------------------------------------------------------------------------
   /** "Parse operand as number" command
   */
   template<class T> class ParseNumCommand : public Command<T>
@@ -138,17 +97,134 @@ namespace mesa
       using OperandsT = typename Command<T>::OperandsT;
 
       bool execute(
-          typename Command<T>::OperandsT& operands,
+          OperandsT& operands,
           const std::string& token) const override
       {
-        // Return if empty or invalid
-        if (token.empty() || std::find_if(token.begin(), token.end(),
-              [](char c) { return !std::isdigit(c); }) != token.end())
+        if (token.empty() || !mesa::is_numeric(token))
           return false;
-        Command<T>::log(LogLevel::Debug, "[ParseNumCommand]\n");
-        //operands.push(std::stoi(token));
+        Command<T>::log(LogLevel::Debug,
+            "[ParseNumCommand] token:'" + token +
+            "' stack:{ " + stack_to_string(operands) + " }\n");
         operands.emplace(token);
         return true;
       }
+  };
+
+  // ---------------------------------------------------------------------------
+  /** Arbitrary command
+   */
+
+  template<class T> class ArbitraryCommand : public Command<T>
+  {
+    public:
+      using DataT      = typename Command<T>::DataT;
+      using OperandsT  = typename Command<T>::OperandsT;
+      using OperationT = std::function<void(const std::string&)>;
+
+      ArbitraryCommand(const std::string& token, OperationT op):
+        m_TOKEN{token},
+        m_op{op}
+      {}
+
+      bool execute(
+          OperandsT& operands,
+          const std::string& token) const override
+      {
+        if (token != m_TOKEN)
+          return false;
+        Command<T>::log(LogLevel::Debug,
+            "[ArbitraryCommand] token:'" + token + "'\n");
+        m_op(token);
+        return true;
+      }
+
+    protected:
+      const std::string m_TOKEN;
+      OperationT m_op;
+  };
+
+  // ---------------------------------------------------------------------------
+  /** Unary operation command
+  */
+  template<class T> class UnaryOpCommand : public Command<T>
+  {
+    public:
+      using DataT      = typename Command<T>::DataT;
+      using OperandsT  = typename Command<T>::OperandsT;
+      using OperationT = std::function<T(T)>;
+
+      UnaryOpCommand(const std::string& token, OperationT op):
+        m_TOKEN{token},
+        m_op{op}
+      {}
+
+      bool execute(
+          OperandsT& operands,
+          const std::string& token) const override
+      {
+        if (token == m_TOKEN) {
+          Command<T>::log(LogLevel::Debug,
+              "[UnaryOpCommand] token:'" + token +
+              "' stack:{ " + stack_to_string(operands) + " }");
+          if (operands.size() < 1) {
+            Command<T>::log(LogLevel::Debug, "\n");
+            throw std::runtime_error("Unary operation requires one operand");
+          }
+          auto lhs = operands.top(); operands.pop();
+          auto result = m_op(lhs);
+          Command<T>::log(LogLevel::Debug,
+              " -> " + std::string{result} + "\n");
+          operands.push(result);
+          return true;
+        }
+        return false;
+      }
+
+    protected:
+      const std::string m_TOKEN;
+      OperationT m_op;
+  };
+
+  // ---------------------------------------------------------------------------
+  /** Binary operation command
+  */
+  template<class T> class BinaryOpCommand : public Command<T>
+  {
+    public:
+      using DataT      = typename Command<T>::DataT;
+      using OperandsT  = typename Command<T>::OperandsT;
+      using OperationT = std::function<T(T, const T&)>;
+
+      BinaryOpCommand(const std::string& token, OperationT op):
+        m_TOKEN{token},
+        m_op{op}
+      {}
+
+      bool execute(
+          OperandsT& operands,
+          const std::string& token) const override
+      {
+        if (token == m_TOKEN) {
+          Command<T>::log(LogLevel::Debug,
+              "[BinaryOpCommand] token:'" + token +
+              "' stack:{ " + stack_to_string(operands) + " }");
+          if (operands.size() < 2) {
+            Command<T>::log(LogLevel::Debug, "\n");
+            throw std::runtime_error("Binary operation require two operands");
+          }
+          auto rhs = operands.top(); operands.pop();
+          auto lhs = operands.top(); operands.pop();
+          auto result = m_op(lhs, rhs);
+          Command<T>::log(LogLevel::Debug,
+              " -> " + std::string{result} + "\n");
+          operands.push(result);
+          return true;
+        }
+        return false;
+      }
+
+    protected:
+      const std::string m_TOKEN;
+      OperationT m_op;
   };
 }

@@ -58,6 +58,10 @@ namespace mesa
         m_next{nullptr}
       {}
 
+      /** Insertion operator interface
+       */
+      virtual Logger& operator<<(const std::string& rhs) = 0;
+
       /** Log message
        */
       Logger& log(
@@ -138,6 +142,9 @@ namespace mesa
         m_osPtr{osPtr}
       {}
 
+      Logger& operator<<(const std::string& rhs) override
+      { (*m_osPtr) << rhs; }
+
     protected:
       /** Logging helper function
        */
@@ -173,7 +180,7 @@ namespace mesa
   };
 }
 
-inline mesa::Logger& operator<<(mesa::Logger& lhs, const mesa::Logger::MessageT& rhs)
-{
-  return lhs.log(rhs.first, rhs.second);
-}
+//inline mesa::Logger& operator<<(mesa::Logger& lhs, const mesa::Logger::MessageT& rhs)
+//{
+  //return lhs.log(rhs.first, rhs.second);
+//}

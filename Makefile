@@ -37,7 +37,7 @@ endef
 
 all: Calc
 
-Calc: BigInt.cpp Calc.cpp main.cpp
+Calc: BigInt.cpp main.cpp
 	$(call making)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(BOOST_UT) -o $@ $^
 	$(call done)
