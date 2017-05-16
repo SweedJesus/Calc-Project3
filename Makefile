@@ -4,10 +4,10 @@ CXX=g++
 CXXSTANDARD=c++11
 
 # Generic flags
-#CXXFLAGS=-std=$(CXXSTANDARD) -Wall -Wextra -Wpedantic
-CXXFLAGS=-std=$(CXXSTANDARD) -Wno-unused-variable
+CXXFLAGS=-std=$(CXXSTANDARD) -Wall -Wextra -Wpedantic
+#CXXFLAGS=-std=$(CXXSTANDARD) -Wno-unused-variable
 #LDLIBS=
-LDFLAGS=
+LDFLAGS=-lreadline
 
 BOOST_PO= -lboost_program_options
 BOOST_UT= -lboost_unit_test_framework-mt
@@ -31,11 +31,18 @@ define done=
 endef
 
 define do=
+$(call making)
 $(call link)
 $(call done)
 endef
 
 all: Calc
+
+#BigInt_test: BigInt.cpp BigInt_test.cpp
+BigInt_test: BigInt_test.cpp
+	$(call making)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(BOOST_UT) -o $@ $^
+	$(call done)
 
 Calc: BigInt.cpp main.cpp
 	$(call making)

@@ -25,14 +25,13 @@
 namespace mesa
 {
   // ---------------------------------------------------------------------------
-  /** Command interface class
-  */
+  //! Command interface class
   template<class T> class Command
   {
     public:
       // Type aliases
-      using DataT     = T;
-      using OperandsT = std::stack<DataT>;
+      using Data     = T;
+      using Operands = std::stack<Data>;
 
       virtual ~Command()                 = default;
       //Command(const Command&)            = default;
@@ -67,7 +66,7 @@ namespace mesa
        * @return true if this command was executed.
        */
       virtual bool execute(
-          OperandsT& operands,
+          Operands& operands,
           const std::string& token) const = 0;
 
     protected:
@@ -88,16 +87,46 @@ namespace mesa
   };
 
   // ---------------------------------------------------------------------------
-  /** "Parse operand as number" command
-  */
+  //! Arbitrary command
+  template<class T> class ArbitraryCommand : public Command<T>
+  {
+    public:
+      using Data      = typename Command<T>::Data;
+      using Operands  = typename Command<T>::Operands;
+      using Operation = std::function<void(const std::string&)>;
+
+      ArbitraryCommand(const std::string& token, Operation op):
+        m_TOKEN{token},
+        m_op{op}
+      {}
+
+      bool execute(
+          Operands&,
+          const std::string& token) const override
+      {
+        if (token != m_TOKEN)
+          return false;
+        Command<T>::log(LogLevel::Debug,
+            "[ArbitraryCommand] token:'" + token + "'\n");
+        m_op(token);
+        return true;
+      }
+
+    protected:
+      const std::string m_TOKEN;
+      Operation m_op;
+  };
+
+  // ---------------------------------------------------------------------------
+  //! "Parse operand as number" command
   template<class T> class ParseNumCommand : public Command<T>
   {
     public:
-      using DataT     = typename Command<T>::DataT;
-      using OperandsT = typename Command<T>::OperandsT;
+      using Data     = typename Command<T>::Data;
+      using Operands = typename Command<T>::Operands;
 
       bool execute(
-          OperandsT& operands,
+          Operands& operands,
           const std::string& token) const override
       {
         if (token.empty() || !mesa::is_numeric(token))
@@ -111,55 +140,21 @@ namespace mesa
   };
 
   // ---------------------------------------------------------------------------
-  /** Arbitrary command
-   */
-
-  template<class T> class ArbitraryCommand : public Command<T>
-  {
-    public:
-      using DataT      = typename Command<T>::DataT;
-      using OperandsT  = typename Command<T>::OperandsT;
-      using OperationT = std::function<void(const std::string&)>;
-
-      ArbitraryCommand(const std::string& token, OperationT op):
-        m_TOKEN{token},
-        m_op{op}
-      {}
-
-      bool execute(
-          OperandsT& operands,
-          const std::string& token) const override
-      {
-        if (token != m_TOKEN)
-          return false;
-        Command<T>::log(LogLevel::Debug,
-            "[ArbitraryCommand] token:'" + token + "'\n");
-        m_op(token);
-        return true;
-      }
-
-    protected:
-      const std::string m_TOKEN;
-      OperationT m_op;
-  };
-
-  // ---------------------------------------------------------------------------
-  /** Unary operation command
-  */
+  //! Unary operation command
   template<class T> class UnaryOpCommand : public Command<T>
   {
     public:
-      using DataT      = typename Command<T>::DataT;
-      using OperandsT  = typename Command<T>::OperandsT;
-      using OperationT = std::function<T(T)>;
+      using Data      = typename Command<T>::Data;
+      using Operands  = typename Command<T>::Operands;
+      using Operation = std::function<T(const T&)>;
 
-      UnaryOpCommand(const std::string& token, OperationT op):
+      UnaryOpCommand(const std::string& token, Operation op):
         m_TOKEN{token},
         m_op{op}
       {}
 
       bool execute(
-          OperandsT& operands,
+          Operands& operands,
           const std::string& token) const override
       {
         if (token == m_TOKEN) {
@@ -182,49 +177,90 @@ namespace mesa
 
     protected:
       const std::string m_TOKEN;
-      OperationT m_op;
+      Operation m_op;
   };
 
   // ---------------------------------------------------------------------------
-  /** Binary operation command
-  */
+  //! Binary operation command
   template<class T> class BinaryOpCommand : public Command<T>
   {
     public:
-      using DataT      = typename Command<T>::DataT;
-      using OperandsT  = typename Command<T>::OperandsT;
-      using OperationT = std::function<T(T, const T&)>;
+      using Data      = typename Command<T>::Data;
+      using Operands  = typename Command<T>::Operands;
+      using Operation = std::function<T(const T&, const T&)>;
 
-      BinaryOpCommand(const std::string& token, OperationT op):
+      BinaryOpCommand(const std::string& token, Operation op):
         m_TOKEN{token},
         m_op{op}
       {}
 
       bool execute(
-          OperandsT& operands,
+          Operands &operands,
           const std::string& token) const override
       {
-        if (token == m_TOKEN) {
-          Command<T>::log(LogLevel::Debug,
-              "[BinaryOpCommand] token:'" + token +
-              "' stack:{ " + stack_to_string(operands) + " }");
-          if (operands.size() < 2) {
-            Command<T>::log(LogLevel::Debug, "\n");
-            throw std::runtime_error("Binary operation require two operands");
-          }
-          auto rhs = operands.top(); operands.pop();
-          auto lhs = operands.top(); operands.pop();
-          auto result = m_op(lhs, rhs);
-          Command<T>::log(LogLevel::Debug,
-              " -> " + std::string{result} + "\n");
-          operands.push(result);
-          return true;
+        if (token != m_TOKEN)
+          return false;
+        Command<T>::log(LogLevel::Debug,
+            "[BinaryOpCommand] token:'" + token +
+            "' stack:{ " + stack_to_string(operands) + " }");
+        if (operands.size() < 2) {
+          Command<T>::log(LogLevel::Debug, "\n");
+          throw std::runtime_error(
+              "Binary operation require two operands");
         }
-        return false;
+        auto rhs = operands.top(); operands.pop();
+        auto lhs = operands.top(); operands.pop();
+        auto result = m_op(lhs, rhs);
+        Command<T>::log(LogLevel::Debug,
+            " -> " + std::string{result} + "\n");
+        operands.push(result);
+        return true;
       }
 
     protected:
       const std::string m_TOKEN;
-      OperationT m_op;
+      Operation m_op;
+  };
+
+  // ---------------------------------------------------------------------------
+  //! Consumer binary operation command
+  template<class T> class ConsumerBinaryOpCommand : public Command<T>
+  {
+    public:
+      using Data      = typename Command<T>::Data;
+      using Operands  = typename Command<T>::Operands;
+      using Operation = std::function<T(const T& lhs, const T& rhs)>;
+
+      ConsumerBinaryOpCommand(const std::string &token, Operation op):
+        m_TOKEN{token},
+        m_op{op}
+      {}
+
+      bool execute(
+          Operands &operands,
+          const std::string& token) const override
+      {
+        if (token != m_TOKEN)
+          return false;
+        Command<T>::log(LogLevel::Debug,
+            "[ConsumerBinaryOpCommand] token:'" + token +
+            "' stack:{ " + stack_to_string(operands) + " }\n");
+        if (operands.size() < 2) {
+          Command<T>::log(LogLevel::Debug, "\n");
+          throw std::runtime_error(
+              "Consumer binary operation requires at least two operands");
+        }
+        Data result;
+        while (operands.size() > 1) {
+          result = operands.top(); operands.pop();
+          result = m_op(result, operands.top()); operands.pop();
+          operands.push(result);
+        }
+        return true;
+      }
+
+    protected:
+      const std::string m_TOKEN;
+      Operation m_op;
   };
 }

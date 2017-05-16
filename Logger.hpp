@@ -25,7 +25,10 @@
  * stdLogger1.log(LogLevel::Error, "baz\n");
  * ```
  *
- * TODO: Use unique_ptr for FileLogger file object?
+ * TODO:
+ *  - Use unique_ptr for FileLogger file object?
+ *  - Insertion operator should have a default logging level (currently
+ *    inserts directly to stream regardless of logging level)
  */
 
 #include <iostream>
@@ -143,7 +146,10 @@ namespace mesa
       {}
 
       Logger& operator<<(const std::string& rhs) override
-      { (*m_osPtr) << rhs; }
+      {
+        (*m_osPtr) << rhs;
+        return *this;
+      }
 
     protected:
       /** Logging helper function

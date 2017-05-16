@@ -1,13 +1,13 @@
 // @author Nils Olsson
+//
+// Now using the GNU readline and history libraries for improved interface
+// https://cnswww.cns.cwru.edu/php/chet/readline/readline.html
+// https://cnswww.cns.cwru.edu/php/chet/readline/history.html
 
 #include <unistd.h>
-#include <stdexcept>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <queue>
-#include <stack>
 #include <string>
 
 #include "Logger.hpp"
@@ -16,80 +16,67 @@
 #include "BigInt.hpp"
 
 // Logger aliases
-using LogLevel = mesa::LogLevel;
+using LogLevel     = mesa::LogLevel;
 using StreamLogger = mesa::StreamLogger;
-//using FileLogger = mesa::FileLogger;
+using FileLogger   = mesa::FileLogger;
 
 // Data type alias
-using DataT = mesa::BigInt;
-
-// Command aliases
-using Command = mesa::Command<DataT>;
-using OperandsT = Command::OperandsT;
-
-// Arithmetic command aliases
-//using BinaryOpCommand = mesa::BinaryOpCommand<DataT>;
-//using ParseNumCommand = mesa::ParseNumCommand<DataT>;
+using Data = mesa::BigInt;
 
 // Calculator aliases
-using Calc = mesa::Calc<DataT>;
+using Calc = mesa::Calc<Data>;
 
-// @return True if string contains only "valid" characters
-/*
- *inline bool is_valid_string(const std::string& s)
- *{
- *  for (auto c: s) {
- *    switch (c) {
- *      case '0': case '1': case '2': case '3': case '4':
- *      case '5': case '6': case '7': case '8': case '9':
- *      case '+': case '*': case '^':
- *        break;
- *      default:
- *        return false;
- *        break;
- *    }
- *  }
- *  return true;
- *}
- */
+const std::string HELP =
+"Help\n"
+"  [command] [operation <args...>]\n"
+"\n"
+"Commands:\n"
+"  q [ quit ]     Quit the program\n"
+"  h [ help, ? ]  Print this message\n"
+"\n"
+"Instructions:\n"
+"  Calculates the result of a single-line compound post-fix mathematical "
+"expressions."
+"Binary operations and commands consume and expect two operands, while unary"
+"operations consume only one one. Additionally, consumer commands will consume"
+"all operands on the stack by applying the equivalent binary operation until"
+"only a single result is left on the stack. And lastly, arbitrary commands"
+"provide special functionality while requiring no operands.\n"
+"\n"
+"Binary operations:\n"
+"  +    Addition\n"
+"  -    Subraction\n"
+"  *    Multiplication\n"
+"  /    Division\n"
+"  %    Modulus\n"
+"  ^    Exponentiation\n"
+"  max  Maximum of two values\n"
+"  min  Minimum of two values\n"
+"  lcm  Least common multiple\n"
+"  gcf  Greatest common factor\n"
+"\n"
+"Unary operations:\n"
+"  !    Factorial\n"
+"\n"
+"Consumer binary operations:\n"
+"  ++   Addition\n"
+"  --   Subtraction\n"
+"  **   Multiplication\n"
+"  //   Division\n"
+"  %%   Modulus\n"
+"  ^^   Exponentiation\n"
+"\n"
+"Arbitrary operations:\n"
+"  ans  Answer of last expression\n";
 
-// @return Vector of space delimited token strings from an input string
-/*
- *inline std::vector<std::string> vectorize(const std::string& s)
- *{
- *  std::vector<std::string> tokens;
- *  std::istringstream iss{s};
- *  std::string temp;
- *  while (iss >> temp >> std::ws)
- *    //if (is_valid_string(temp))
- *    tokens.push_back(temp);
- *  //else
- *  //throw std::invalid_argument{temp};
- *  return tokens;
- *}
- */
-
-// @return Queue of space delimited token strings from an input string
-/*
- *inline std::queue<std::string> queuify(const std::string& s)
- *{
- *  std::queue<std::string> tokens;
- *  std::istringstream iss{s};
- *  std::string temp;
- *  while (iss >> temp >> std::ws)
- *    if (is_valid_string(temp))
- *      tokens.push(temp);
- *    else
- *      throw std::invalid_argument{temp};
- *  return tokens;
- *}
- */
+// -----------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {
   bool is_interactive = (isatty(0) && isatty(1));
   bool is_verbose = false;
   bool is_debug = false;
+  bool is_running = true;
 
   // Process program options
   for (char c; (c = getopt(argc, argv, "hvd")) != -1;) {
@@ -98,9 +85,9 @@ int main(int argc, char* argv[])
         std::cout <<
           "Project 3: PostFixCalculator\n"
           "Program options:\n"
-          "  -h    Show this message\n"
-          "  -v    Be verbose\n"
-          "  -d    Debug\n";
+          "  -h  Show this message\n"
+          "  -v  Start in verbose mode\n"
+          "  -d  Start in debug mode\n";
         return 0;
         break;
       case 'v':
@@ -126,25 +113,32 @@ int main(int argc, char* argv[])
   calc->stdLogger(&logger);
   calc->errLogger(&logger);
 
-  // Input
-  std::string line, token;
+  // Input containers
+  std::string token, prompt;
+  char* line;
+  Data result;
 
-  // Print interactive intro message
-  if (is_interactive)
+  // Interactive mode message and line prompt
+  if (is_interactive) {
     std::cout <<
-      "Project 3: OO-Calc\n"
+      "Project 3: PostFixCalculator\n"
       "  Enter 'help' to display interactive usage information\n"
       "  Enter 'quit' to quit\n";
+    prompt = "> ";
+  }
 
   // Main loop
-  DataT result;
-  while (!std::cin.eof()) {
-    if (is_interactive) std::cout << "> ";
-
-    // Input
-    line.clear();
-    std::getline(std::cin, line);
-    if (line.empty()) continue;
+  while (is_running) {
+    // GNU readline/history
+    line = readline(prompt.c_str());
+    if (line == NULL) {
+      // Break at end of standard-input
+      break;
+    } else if (line[0] == '\0') {
+      // Skip empty line
+      continue;
+    }
+    add_history(line);
 
     // Parse optional command/comment
     std::istringstream{line} >> token;
@@ -152,24 +146,23 @@ int main(int argc, char* argv[])
       continue;
     } else if (token == "q" || token == "quit") {
       std::cout << "Quitting...\n";
+      is_running = false; // Not really doing anything, but w/e
       break;
+    } else if (token == "v" || token == "verbose") {
+      is_verbose = !is_verbose;
+      std::cout << (is_verbose ?
+          "(Verbosity enabled)\n" :
+          "(Verbosity disabled)\n");
+      continue;
+    } else if (token == "d" || token == "debug") {
+      is_debug = !is_debug;
+      std::cout << (is_debug ?
+          "(Debugging enabled)\n" :
+          "(Debugging disabled)\n");
+      logger.logLevel(logger.logLevel() ^ LogLevel::Debug);
+      continue;
     } else if (token == "h" || token == "help" || token == "?") {
-      std::cout <<
-        "Help\n"
-        "  [command] [operation <args...>]\n\n"
-        "Commands:\n"
-        "  q [ quit ]     Quit the program\n"
-        "  h [ help, ? ]  Print this message\n\n"
-        "Instructions:\n"
-        "  Calculates the result of a single-line compound infix mathematical "
-        "expressions. Operations are binary (expect to prior numerical "
-        "arguments) and all are separated by whitespace.\n\n"
-        "Supported operations:\n"
-        "  +  Addition\n"
-        "  -  Subraction\n"
-        "  *  Multiplication\n"
-        "  /  Division\n"
-        "  ^  Exponentiation\n";
+      std::cout << HELP;
       continue;
     }
 
@@ -183,6 +176,8 @@ int main(int argc, char* argv[])
       std::cout << "Exception!\n  what():  " << e.what() << "\n";
     }
   }
+
+  delete line;
 
   return 0;
 }

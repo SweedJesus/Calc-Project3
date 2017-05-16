@@ -22,7 +22,7 @@ using mesa::BigInt;
 void BigInt::resize()
 {
   m_data.erase(
-      std::find_if_not(m_data.rbegin(), --m_data.rend(), [](const digitT& a)
+      std::find_if_not(m_data.rbegin(), --m_data.rend(), [](const DigitT& a)
         { return (a == 0); }).base(), m_data.end());
 }
 
@@ -31,17 +31,17 @@ void BigInt::resize(const size_t& n)
   m_data.resize(n);
 }
 
-void BigInt::to_nines_comp(BigInt::dataT& data)
+void BigInt::to_nines_comp(BigInt::DataT& data)
 {
   std::transform(data.begin(), data.end(), data.begin(),
-      [](const digitT& a){ return (9 - a); });
+      [](const DigitT& a){ return (9 - a); });
 }
 
-void BigInt::carry(BigInt::dataT& data)
+void BigInt::carry(BigInt::DataT& data)
 {
-  BigInt::digitT temp = 0, carry = 0;
+  BigInt::DigitT temp = 0, carry = 0;
   std::transform(data.begin(), data.end(), data.begin(),
-      [&temp, &carry](const BigInt::digitT& digit)
+      [&temp, &carry](const BigInt::DigitT& digit)
       { temp = digit + carry; carry = temp / 10; return temp % 10; });
 }
 
@@ -53,7 +53,7 @@ void BigInt::add(const BigInt& other)
   resize(std::max(lhs.size(), rhs.size()) + 1);
   // Add phase
   std::transform(rhs.begin(), rhs.end(), lhs.begin(), lhs.begin(),
-      [](const digitT& lhsDigit, const digitT& rhsDigit)
+      [](const DigitT& lhsDigit, const DigitT& rhsDigit)
       { return lhsDigit + rhsDigit; });
   // Carry phase
   carry(m_data);
@@ -81,7 +81,7 @@ void BigInt::multiply(const BigInt& other)
 
   // Special cases
   if ((*this) == 0 || other == 0) {
-    m_data = dataT{0};
+    m_data = DataT{0};
     return;
   } else if (other == 1) {
     return;
@@ -92,13 +92,14 @@ void BigInt::multiply(const BigInt& other)
   // lhs:multiplicand, rhs:multiplier
   auto& lhs = m_data;
   auto& rhs = other.m_data;
-  dataT res(std::max(lhs.size(), rhs.size()) * 2);
+  DataT res(std::max(lhs.size(), rhs.size()) * 2);
   // Multiplication phase
   BigInt m = 0;
   std::for_each(rhs.begin(), rhs.end(),
-      [&m, &lhs, &res](const digitT& rhsDigit) {
-      std::transform(lhs.begin(), lhs.end(), res.begin()+(unsigned long)(m), res.begin()+(unsigned long)(m),
-        [&rhsDigit](const digitT& lhsDigit, const digitT& resDigit)
+      [&m, &lhs, &res](const DigitT& rhsDigit) {
+      std::transform(lhs.begin(), lhs.end(),
+        res.begin()+(unsigned long)(m), res.begin()+(unsigned long)(m),
+        [&rhsDigit](const DigitT& lhsDigit, const DigitT& resDigit)
         { return resDigit + lhsDigit * rhsDigit; });
       carry(res);
       ++m;
@@ -200,7 +201,7 @@ BigInt::BigInt(const std::string& s)
 BigInt::operator unsigned long() const
 {
   std::ostringstream oss;
-  std::copy(m_data.rbegin(), m_data.rend(), std::ostream_iterator<digitT>(oss));
+  std::copy(m_data.rbegin(), m_data.rend(), std::ostream_iterator<DigitT>(oss));
   return std::stoul(oss.str());
 }
 
@@ -208,7 +209,7 @@ BigInt::operator std::string() const
 {
   std::ostringstream ss;
   std::copy(m_data.rbegin(), m_data.rend(),
-      std::ostream_iterator<digitT>(ss));
+      std::ostream_iterator<DigitT>(ss));
   return ss.str();
 }
 
@@ -244,6 +245,14 @@ BigInt& BigInt::operator/=(const BigInt& other)
   return *this;
 }
 
+BigInt& BigInt::operator%=(const BigInt& other)
+{
+  BigInt temp(*this);
+  temp /= other;
+  operator-=(temp * other);
+  return *this;
+}
+
 BigInt& BigInt::operator^=(const BigInt& other)
 {
   exponentiate(other);
@@ -257,21 +266,24 @@ BigInt& BigInt::operator^=(const BigInt& other)
 
 bool operator<(const BigInt& lhs, const BigInt& rhs)
 {
-  if (lhs == rhs)
+  if (lhs == rhs) {
     return false;
-  if (lhs.size() < rhs.size())
+  }
+  if (lhs.size() < rhs.size()) {
     return true;
-  if (lhs.size() > rhs.size())
+  }
+  if (lhs.size() > rhs.size()) {
     return false;
-  auto& lhsData = lhs.data();
-  auto& rhsData = rhs.data();
-  if (std::find_first_of(
-        lhsData.rbegin(), lhsData.rend(), rhsData.rbegin(), rhsData.rend(),
-        [](const BigInt::digitT& lhsDigit, const BigInt::digitT& rhsDigit)
-        { return lhsDigit > rhsDigit; })
-      != lhsData.rend())
-    return false;
-  return true;
+  }
+  auto lhsIt = lhs.data().rbegin();
+  auto rhsIt = rhs.data().rbegin();
+  for (; lhsIt != lhs.data().rend(); ++lhsIt, ++rhsIt) {
+    if (*lhsIt < *rhsIt)
+      return true;
+    else if (*lhsIt > *rhsIt)
+      return false;
+  }
+  return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const BigInt& rhs)

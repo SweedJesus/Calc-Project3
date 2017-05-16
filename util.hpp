@@ -55,6 +55,7 @@ namespace mesa
   inline std::string stack_to_string(std::stack<T> stack)
   {
     std::ostringstream oss;
+    oss << "(T..B) ";
     while (!stack.empty()) {
       oss << stack.top();
       if (stack.size() > 1) oss << ", ";

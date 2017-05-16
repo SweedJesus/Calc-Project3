@@ -1,9 +1,0 @@
-# Non-numeric/negative arguments (aka unhandled operands now)
-
-# Two operands expected to binary operator command
-
-# Negative result
-- 1 2
-
-# Division by zero
-/ 1 0

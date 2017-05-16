@@ -25,86 +25,70 @@
 
 namespace mesa {
 
-  /** BigInt class
-  */
+  //! BigInt class
   class BigInt
   {
     public:
       // Type aliases
-      using digitT = uint32_t;
-      using dataT = std::vector<digitT>;
+      using DigitT = uint32_t;
+      using DataT  = std::vector<DigitT>;
 
-      /** Constructor (integer)
-       * @param n Integer
-       */
+      //! Constructor (integer)
+      // @param n Integer
       BigInt(unsigned long long n = 0) noexcept;
 
-      /** Copy constructor
-      */
+      //! Copy constructor
       BigInt(const BigInt&) = default;
 
-      /** Move constructor
-      */
+      //! Move constructor
       BigInt(BigInt&&) = default;
 
-      /** Constructor (string)
-       * @param s String whose every character is a decimal integer digit
-       * @throws Invalid argument exception
-       * TODO:
-       * I know I'm not supposed to throw exceptions from constructors but I
-       * don't understand better alternatives yet.
-       */
+      //! Constructor (string)
+      // @param s String whose every character is a decimal integer digit
+      // @throws Invalid argument exception
+      // TODO:
+      // I know I'm not supposed to throw exceptions from constructors but I
+      // don't understand better alternatives yet.
       BigInt(const std::string& s);
 
-      /** Get underlying container
-      */
-      const dataT& data() const
+      //! Get underlying container
+      const DataT& data() const
       { return m_data; }
 
-      /** Get if underlying container is empty
-      */
+      //! Get if underlying container is empty
       bool empty() const
       { return m_data.empty(); }
 
-      /** Get size of underlying container
-      */
+      //! Get size of underlying container
       size_t size() const
       { return m_data.size(); }
 
-      /** Long conversion operator
-       * @throw std::out_of_range
-       */
+      //! Long conversion operator
+      // @throw std::out_of_range
       explicit operator unsigned long() const;
 
-      /** Double conversion operator
-       * @throw std::out_of_range
-       */
+      //! Double conversion operator
+      // @throw std::out_of_range
       explicit operator double() const
       { return (double)(operator unsigned long()); }
 
-      /** String conversion operator
-      */
+      //! String conversion operator
       explicit operator std::string() const;
 
-      /** Copy assignment operator
-      */
+      //! Copy assignment operator
       BigInt& operator=(const BigInt&) = default;
 
-      /** Move assignment operator
-      */
+      //! Move assignment operator
       BigInt& operator=(BigInt&&) = default;
 
-      /** Addition assignment operator
-      */
+      //! Addition assignment operator
       BigInt& operator+=(const BigInt& other);
 
-      /** Prefix increment operator
-      */
+      //! Prefix increment operator
       BigInt& operator++()
       { return operator+=(1); }
 
-      /** Postfix increment operator
-      */
+      //! Postfix increment operator
       BigInt operator++(int)
       {
         BigInt temp{*this};
@@ -112,19 +96,16 @@ namespace mesa {
         return temp;
       }
 
-      /** Subtraction assignment operator
-       * Uses method of complements
-       * https://en.wikipedia.org/wiki/Method_of_complements
-       */
+      //! Subtraction assignment operator
+      // Uses method of complements
+      // https://en.wikipedia.org/wiki/Method_of_complements
       BigInt& operator-=(const BigInt& other);
 
-      /** Prefix decrement operator
-      */
+      //! Prefix decrement operator
       BigInt& operator--()
       { return operator-=(1); }
 
-      /** Postfix decrement operator
-      */
+      //! Postfix decrement operator
       BigInt operator--(int)
       {
         BigInt temp{*this};
@@ -132,145 +113,125 @@ namespace mesa {
         return temp;
       }
 
-      /** Multiplication assignment operator
-      */
+      //! Multiplication assignment operator
       BigInt& operator*=(const BigInt& other);
 
-      /** Division assignment operator
-      */
+      //! Division assignment operator
       BigInt& operator/=(const BigInt& other);
 
-      /** Exponentiation assignment operator
-      */
+      //! Modulus assignment operator
+      BigInt& operator%=(const BigInt& other);
+
+      //! Exponentiation assignment operator
       BigInt& operator^=(const BigInt& other);
 
     private:
-      dataT m_data; // Has a vector of digits
+      DataT m_data; // Has a vector of digits
 
-      /** Remove trailing zeroes
-      */
+      //! Remove trailing zeroes
       void resize();
 
-      /** Add trailing zeroes (pad)
-      */
+      //! Add trailing zeroes (pad)
       void resize(const size_t& n);
 
-      /** Convert to nines complement
-       * Flops each digit to its nines complement
-       */
-      static void to_nines_comp(dataT& data);
+      //! Convert to nines complement
+      // Flops each digit to its nines complement
+      static void to_nines_comp(DataT& data);
 
-      /** Handle carry digits for a BigInt data container
-      */
-      static void carry(dataT& data);
+      //! Handle carry digits for a BigInt data container
+      static void carry(DataT& data);
 
-      /** Add addition helper function
-      */
+      //! Add addition helper function
       void add(const BigInt& other);
 
-      /** Subtraction helper function
-      */
+      //! Subtraction helper function
       void subtract(const BigInt& other);
 
-      /** Multiplication helper function
-      */
+      //! Multiplication helper function
       void multiply(const BigInt& other);
 
-      /** Division helper function
-      */
+      //! Division helper function
       void divide(const BigInt& other);
 
-      /** Exponentiation helper functions
-      */
+      //! Exponentiation helper functions
       void exponentiate(const BigInt& other);
 
-      /** FFT implementation TODO
-      */
+      //! FFT implementation TODO
       //BigInt& fft(const BigInt& other);
   };
 }
 
 // -----------------------------------------------------------------------------
 
-/** Logical negation
-*/
+//! Logical negation
 inline bool operator!(
     const mesa::BigInt& lhs)
 { return (lhs.empty()); }
 
-/** Equality operator
-*/
+//! Equality operator
 inline bool operator==(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs)
 { return lhs.data() == rhs.data(); }
 
-/** Inequality operator
-*/
+//! Inequality operator
 inline bool operator!=(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs)
 { return !operator==(lhs, rhs); }
 
-/** Less-than operator
-*/
+//! Less-than operator
 bool operator<(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs);
 
-/** Greater-than operator
-*/
+//! Greater-than operator
 inline bool operator>(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs)
 { return operator<(rhs, lhs); }
 
-/** Less-than or equal-to operator
-*/
+//! Less-than or equal-to operator
 inline bool operator<=(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs)
 { return !operator>(lhs, rhs); }
 
-/** Greater-than or equal-to operator
-*/
+//! Greater-than or equal-to operator
 inline bool operator>=(
     const mesa::BigInt& lhs, const mesa::BigInt& rhs)
 { return !operator<(lhs, rhs); }
 
-/** mesa::BigInt binary addition
-*/
+//! BigInt binary addition
 inline mesa::BigInt operator+(
     mesa::BigInt lhs, const mesa::BigInt& rhs)
 { return lhs += rhs; }
 
-/** mesa::BigInt binary subtraction
-*/
+//! BigInt binary subtraction
 inline mesa::BigInt operator-(
     mesa::BigInt lhs, const mesa::BigInt& rhs)
 { return lhs -= rhs; }
 
-
-/** mesa::BigInt binary multiplication
-*/
+//! BigInt binary multiplication
 inline mesa::BigInt operator*(
     mesa::BigInt lhs, const mesa::BigInt& rhs)
 { return lhs *= rhs; }
 
-/** mesa::BigInt binary division
-*/
+//! BigInt binary division
 inline mesa::BigInt operator/(
     mesa::BigInt lhs, const mesa::BigInt& rhs)
 { return lhs /= rhs; }
 
-/** mesa::BigInt binary exponentiation
-*/
+//! BigInt binary modulus
+inline mesa::BigInt operator%(
+    mesa::BigInt lhs, const mesa::BigInt& rhs)
+{ return lhs %= rhs; }
+
+//! BigInt binary exponentiation
 inline mesa::BigInt operator^(
     mesa::BigInt lhs, const mesa::BigInt& rhs)
 { return lhs ^= rhs; }
 
-/** mesa::BigInt insertion operator
-*/
+//! BigInt insertion operator
 std::ostream& operator<<(
     std::ostream& os, const mesa::BigInt& rhs);
 
-/** mesa::BigInt extraction operator
-*/
+//! BigInt extraction operator
 std::istream& operator>>(
     std::istream& is, mesa::BigInt& rhs);
 
