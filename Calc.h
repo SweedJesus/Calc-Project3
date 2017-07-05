@@ -6,11 +6,11 @@
 #include <functional>
 #include <exception>
 
-#include "Logger.hpp"
-#include "BigInt.hpp"
-#include "Command.hpp"
+#include "Logger.h"
+#include "BigInt.h"
+#include "Command.h"
 
-#include "util.hpp"
+#include "util.h"
 
 // -----------------------------------------------------------------------------
 // Declarations

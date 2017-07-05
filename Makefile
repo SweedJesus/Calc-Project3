@@ -4,13 +4,14 @@ CXX=g++
 CXXSTANDARD=c++11
 
 # Generic flags
-CXXFLAGS=-std=$(CXXSTANDARD) -Wall -Wextra -Wpedantic
-#CXXFLAGS=-std=$(CXXSTANDARD) -Wno-unused-variable
-#LDLIBS=
-LDFLAGS=-lreadline
+CXXWARN=-Wall -Wextra -Wpedantic
+#CXXWARN=-Wno-unused-variable
+CXXFLAGS=-std=$(CXXSTANDARD) $(CXXWARN)
+LDFLAGS=-I/usr/local/include -lreadline
 
-BOOST_PO= -lboost_program_options
-BOOST_UT= -lboost_unit_test_framework-mt
+# Comment these out if boost not provided a precompiled libs
+#BOOST_PO= -lboost_program_options
+#BOOST_UT= -lboost_unit_test_framework-mt
 
 define link=
 @echo -e "\e[31m- Linking\e[0m $@"
@@ -52,7 +53,7 @@ Calc: BigInt.cpp main.cpp
 .cpp.o:
 	$(call compile)
 
-.PHONY: clean remove help
+.PHONY: clean remove
 
 clean:
 	@echo -e "\e[33m-- Clean\e[0m"
@@ -61,13 +62,3 @@ clean:
 remove:
 	@echo -e "\e[33m-- Remove\e[0m"
 	find . -type f -executable -delete
-
-help:
-	@echo "Targets:"
-	@echo "  help    Show this message"
-	@echo "  clean   Remove object files"
-	@echo "  remove  Remove executables"
-	@echo "  Calc"
-	@echo "  all     Build Calc"
-
-.DEFAULT_GOAL:= help

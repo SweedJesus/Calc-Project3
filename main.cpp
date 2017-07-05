@@ -4,16 +4,20 @@
 // https://cnswww.cns.cwru.edu/php/chet/readline/readline.html
 // https://cnswww.cns.cwru.edu/php/chet/readline/history.html
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+//#include "cpp-readline/src/Console.hpp"
 #include <iostream>
 #include <string>
 
-#include "Logger.hpp"
-#include "Command.hpp"
-#include "Calc.hpp"
-#include "BigInt.hpp"
+#include "Logger.h"
+#include "Command.h"
+#include "Calc.h"
+#include "BigInt.h"
 
 // Logger aliases
 using LogLevel     = mesa::LogLevel;

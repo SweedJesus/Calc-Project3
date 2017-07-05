@@ -10,7 +10,7 @@
 
 #include <iomanip>
 
-#include "BigInt.hpp"
+#include "BigInt.h"
 
 // -----------------------------------------------------------------------------
 // BigInt

@@ -1,3 +1,5 @@
+// Nils Olsson
+
 #pragma once
 
 /*
@@ -18,9 +20,9 @@
 #include <functional>
 #include <algorithm>
 
-#include "Logger.hpp"
+#include "Logger.h"
 
-#include "util.hpp"
+#include "util.h"
 
 namespace mesa
 {
