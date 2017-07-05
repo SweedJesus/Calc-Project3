@@ -161,7 +161,6 @@ void mesa::Calc<T>::initialize()
     new ConsumerBinaryOpCommand{"%.",   modulus},
     new ConsumerBinaryOpCommand{"^.",   exponentiate},
     new ConsumerBinaryOpCommand{"min.", min},
-    new ConsumerBinaryOpCommand{"max.", min},
     new ConsumerBinaryOpCommand{"max.", max},
     new ConsumerBinaryOpCommand{"lcm.", lcm},
     new ConsumerBinaryOpCommand{"gcf.", gcf},
