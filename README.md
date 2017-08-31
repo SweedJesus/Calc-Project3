@@ -36,12 +36,12 @@
       !    Factorial
 
     Consumer binary operations:
-      ++   Addition
-      --   Subtraction
-      **   Multiplication
-      //   Division
-      %%   Modulus
-      ^^   Exponentiation
+      +.   Addition
+      -.   Subtraction
+      *.   Multiplication
+      /.   Division
+      %.   Modulus
+      ^.   Exponentiation
 
     Arbitrary operations:
       ans  Answer of last expression
