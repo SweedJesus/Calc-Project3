@@ -14,10 +14,10 @@
 #include <iostream>
 #include <string>
 
+#include "BigInt.h"
 #include "Logger.h"
 #include "Command.h"
 #include "Calc.h"
-#include "BigInt.h"
 
 // Logger aliases
 using LogLevel     = mesa::LogLevel;

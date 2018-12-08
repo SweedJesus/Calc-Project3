@@ -45,8 +45,9 @@ namespace mesa
     std::queue<std::string> tokens;
     std::istringstream iss{s};
     std::string temp;
-    while (iss >> temp >> std::ws)
+    while (iss >> temp) {
       tokens.push(temp);
+    }
     return tokens;
   }
 
@@ -60,6 +61,19 @@ namespace mesa
       oss << stack.top();
       if (stack.size() > 1) oss << ", ";
       stack.pop();
+    }
+    return oss.str();
+  }
+
+  template<typename T>
+  inline std::string queue_to_string(std::queue<T> q)
+  {
+    std::ostringstream oss;
+    oss << "(T..B) ";
+    while (!q.empty()) {
+      oss << q.front();
+      if (q.size() > 1) oss << ", ";
+      q.pop();
     }
     return oss.str();
   }
